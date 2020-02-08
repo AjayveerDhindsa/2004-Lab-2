@@ -12,7 +12,6 @@ clc
 a_Attack = -5:12; %Entire Plane
 C_L = [-0.32438 -0.21503 -0.10081 0.010503 0.12155 0.24163 0.34336 0.45256 0.56037 0.66625 0.76942 0.86923 0.96386 1.0441 1.0743 1.0807 1.0379 1.034]; %Entire Plane
 C_D = [0.044251 0.033783 0.028627 0.025864 0.024643 0.025099 0.025635 0.02766 0.030677 0.034855 0.040403 0.04759 0.057108 0.070132 0.090921 0.11193 0.13254 0.15645]; %Entire Plane
-a_attack = [-5 -4 -3 -2 -1 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15]; %Just Wings
 
 Re30data  = readcell('AG18_T1_Re0.030_M0.00_N9.0.txt');
 Re40data  = readcell('AG18_T1_Re0.040_M0.00_N9.0.txt');
@@ -57,41 +56,29 @@ e = 0.9387; %Given Value
 AR= 16.5; %
 a_wing3D = a_02D/(1+((57.3*a_02D)/(pi*e*AR)));
 
-%Sparcing data for 2D wing plot
-A_data = a_attack(1:12);
-C_Ldata = C_L(1:12);
-C_Ddata = C_D(1:12);
-
-%Using y=mx+b to find a_0 on 2D airfoil plot
-A = polyfit(A_data,C_Ldata,1);
-a_0airfoil = A(1);
-
-%Using Equation 3.1 to solve for a_0 on 2D airfoil plot
-a_airfoil3D = a_0airfoil/(1+(57.3*a_0airfoil)/(pi*e*AR)); %3D slope
-
 %Calculating the angle of attack when lift = 0
 %Using y=mx+b to solve for a_attack3D for airfoil
 %Lift = 1/2 *C_l*rho*V^2*S
-a_attack3Dwing = -C_l(6)/a_wing3D;
+a_attack3Dwing = -cell2mat(Data_Cl{3}(67))/a_wing3D;
 
 %Coefficient of Lift for 3D finite wing
-CL_wing3D = a_wing3D.*(a_attack-a_attack3Dwing);
+CL_wing3D = a_wing3D.*(cell2mat(Data_Alpha{3}(:))-a_attack3Dwing);
 
 %Coefficient of Drag for 3D finite wing
-CD_wing3D = C_d+(CL_wing3D.^2/(pi*e*AR));
+CD_wing3D = cell2mat(Data_Cd{3}(:))+(CL_wing3D.^2/(pi*e*AR));
 
 %% Question 1
 
 figure(3);
 hold on;
-plot(a_attack,CL_wing3D)
+plot(cell2mat(Data_Alpha{3}(:)),CL_wing3D)
 % plot(a_attack,CD_wing3D)
 
 % Overlaying the 
-plot(a_attack,C_l)
+plot(cell2mat(Data_Alpha{3}(:)),cell2mat(Data_Cl{3}(:)))
 plot(a_Attack,C_L)
 
-legend('3D Finite Wing', 'MH 32 Airfoil', 'Tempest UAS')
+legend('3D Finite Wing', 'AG18 Airfoil', 'Tempest UAS','Location','SouthEast')
 %title('Angle of Attack vs. Lift and Drag Coefficients of 3D Finite Wing')
 title('Angle of Attack vs. Lift of Finite 3D Wing, Mh 32 Airfoil, and Tempest UAS')
 xlabel('Angle of Attack [degrees]')
@@ -104,7 +91,7 @@ CL_CD = C_L./C_D;
 % Plotting L/D vs aoa of wing and tempest data
 figure(5);
 hold on;
-plot(a_attack, L_D)
+plot(cell2mat(Data_Alpha{3}(:)), L_D)
 title('Angle of Attack vs. Lift Over Drag of 3D Finite Wing and Tempest UAS')
 xlabel('Angle of Attack [degrees]')
 ylabel('L/D')
@@ -113,28 +100,16 @@ plot(a_Attack, CL_CD)
 legend('3D Finite Wing', 'Tempest UAS')
 hold off
 
-% Calculating percent difference between two curves
-CL_Difference = (((CL_wing3D(1:18) - C_L) ./ C_L) * 100);
-CL_Difference_Avg = mean(CL_Difference);
-% Max percent difference is at 4 degrees which is 725% difference, avg of
-% 37%
-
 % Estimated Max L/D and V/AoA at Max L/D
 for i = 1:length(L_D)
     if L_D(i) == max(L_D)
         Max_LD = max(L_D);
-        Max_AoA = i - 6;
+        Max_AoA = cell2mat(Data_Alpha{3}(i));
         % Max velocity found at end with assumption of flying at 1.8km height 
     end
 end
-
-for i = 1:length(CL_CD)
-    if CL_CD(i) == max(CL_CD)
-        Max_LD_UAS = max(CL_CD);
-        Max_AoA_UAS = i - 6;
-        % Max velocity found at end with assumption of flying at 1.8km height 
-    end
-end
+h = 7; % Height of Garage = 7m
+Max_Range = Max_LD*h;
 %%
 % Using equation 3.6 to solve for CD_min to eventually solve 3.4a/b for CD
 C_fe = 0.004;
